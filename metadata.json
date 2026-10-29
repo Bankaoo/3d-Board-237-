@@ -1,0 +1,6 @@
+{
+  "name": "Board 237",
+  "description": "A tense, atmospheric first-person retro pixel game where you race through a rainy night to catch bus 237.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
