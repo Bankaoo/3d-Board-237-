@@ -18,7 +18,8 @@ export default function App() {
 
   // React state for UI rendering synchronization
   const [gameStatus, setGameStatus] = useState<GameStateStatus>('TITLE');
-  const [timeRemaining, setTimeRemaining] = useState<number>(25.0);
+  const [routeMode, setRouteMode] = useState<'AUTO' | 'DECOY' | 'STANDARD'>('AUTO');
+  const [timeRemaining, setTimeRemaining] = useState<number>(30.0);
   const [playerState, setPlayerState] = useState({ ...gameSim.player });
   const [busesState, setBusesState] = useState([...gameSim.buses]);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
@@ -223,6 +224,11 @@ export default function App() {
             onOpenSettings={handleOpenSettings}
             unlockedCount={unlockedCount}
             totalCount={achievements.length}
+            routeMode={routeMode}
+            onChangeRouteMode={(mode) => {
+              setRouteMode(mode);
+              gameSim.routeMode = mode;
+            }}
           />
         )}
 
@@ -230,6 +236,8 @@ export default function App() {
         {(gameStatus === 'PLAYING' || gameStatus === 'PAUSED') && (
           <GameHUD
             timeRemaining={timeRemaining}
+            totalTime={gameSim.TOTAL_TIME}
+            isDecoyRun={gameSim.isDecoyRun}
             player={playerState}
             buses={busesState}
             feedbackMessage={feedbackMsg}

@@ -61,22 +61,6 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <span className="font-pixel text-sm tracking-wider">START GAME</span>
         </button>
         <span className="text-[11px] text-slate-500 mt-2 font-mono">Press [SPACE] or [ENTER] to start</span>
-
-        {/* Essential Rules Brief */}
-        <div className="mt-8 grid grid-cols-3 gap-2 w-full text-left bg-slate-900/80 border border-slate-800 p-3 rounded-lg text-slate-300 text-xs font-mono">
-          <div className="border-r border-slate-800 pr-2">
-            <div className="text-amber-400 font-bold mb-1">20 METRES</div>
-            <div className="text-[10px] text-slate-400">Distance to shelter.</div>
-          </div>
-          <div className="border-r border-slate-800 pr-2">
-            <div className="text-rose-400 font-bold mb-1">25 SECONDS</div>
-            <div className="text-[10px] text-slate-400">Window before bus departs.</div>
-          </div>
-          <div>
-            <div className="text-cyan-400 font-bold mb-1">BUS 237</div>
-            <div className="text-[10px] text-slate-400">Check the route number.</div>
-          </div>
-        </div>
       </div>
 
       {/* Footer Controls Quick-guide */}
@@ -87,7 +71,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           </span>
           <span><kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">W</kbd> Walk</span>
           <span><kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">Shift</kbd> Sprint (2s)</span>
-          <span><kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">A / D</kbd> Turn around (1s)</span>
+          <span><kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">A / D</kbd> Turn around (0.5s)</span>
           <span><kbd className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">Space</kbd> Board</span>
         </div>
         <div className="text-[10px] text-slate-500">

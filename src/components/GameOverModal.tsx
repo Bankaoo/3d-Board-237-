@@ -23,30 +23,70 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
       case 'SUCCESS_237':
         return {
           title: 'MADE IT!',
-          subtitle: 'You stepped onto Bus 237 just before the doors folded shut.',
+          subtitle: 'Stepped onto Bus 237 just as the folding doors hissed shut. Warm seats and headed home.',
           badge: 'VICTORY',
           color: 'emerald',
           icon: '🚌',
         };
+      case 'DELAYED_SUCCESS':
+        return {
+          title: 'FINALLY ARRIVED!',
+          subtitle: 'You endured an agonizing wait in the freezing rain, but Bus 237 eventually came through.',
+          badge: 'PATIENCE REWARDED',
+          color: 'emerald',
+          icon: '⏳',
+        };
       case 'PATIENCE_BOARDED':
         return {
           title: 'PATIENCE PAYS!',
-          subtitle: 'The driver pulled over right beside you. Sometimes standing still works.',
-          badge: 'UNCONVENTIONAL SUCCESS',
+          subtitle: 'The driver pulled right up to your curb because you didn\'t even move an inch.',
+          badge: 'EFFORTLESS',
           color: 'teal',
           icon: '🧘',
         };
+      case 'NOT_TODAY':
+        return {
+          title: 'NOT TODAY.',
+          subtitle: 'Bus 237 arrived and waited with open doors, but you chose to stand there in the rain. Iconic.',
+          badge: 'REBELLION',
+          color: 'indigo',
+          icon: '🌧️',
+        };
       case 'IMPOSTER':
         return {
-          title: 'IMPOSTER BUS!',
-          subtitle: 'You hopped onto Bus 842. Next stop: Industrial Chemical Docks.',
-          badge: 'WRONG BUS',
+          title: 'WRONG DESTINATION!',
+          subtitle: 'You hopped onto Bus 842. Next stop: Industrial Chemical Docks. Better start your shift.',
+          badge: 'LOST IN TRANSIT',
           color: 'rose',
           icon: '🛑',
         };
+      case 'TRIPPED_STONE':
+        return {
+          title: 'TRIPPED ON A STONE!',
+          subtitle: 'You caught your toe on a loose curb stone and face-planted into a puddle. An ambulance has arrived.',
+          badge: 'HOSPITALIZED',
+          color: 'rose',
+          icon: '🏥',
+        };
+      case 'GHOST_BUS':
+        return {
+          title: 'GHOST BUS!',
+          subtitle: 'You swore you heard the diesel rumble in the fog, but no vehicle ever emerged. Auditory hallucination.',
+          badge: 'PHANTOM ENCOUNTER',
+          color: 'purple',
+          icon: '👻',
+        };
+      case 'CANCELLED_SERVICE':
+        return {
+          title: 'CANCELLED SERVICE!',
+          subtitle: 'No engine hum. No headlights. Just rain. The midnight bus route was cancelled hours ago.',
+          badge: 'STRANDED',
+          color: 'slate',
+          icon: '🚏',
+        };
       case 'ALMOST_MISSED':
         return {
-          title: 'SO CLOSE!',
+          title: 'HEARTBREAK!',
           subtitle: 'The doors slammed in your face with a blast of air brakes. Heartbreak in the rain.',
           badge: 'NEAR MISS',
           color: 'amber',
@@ -55,18 +95,10 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
       case 'SUPER_FATIGUE':
         return {
           title: 'COLLAPSED FROM EXHAUSTION!',
-          subtitle: 'Three sprints took everything out of you. Your legs gave out in the cold rain.',
+          subtitle: 'Three sprints in freezing rain took everything out of you. Your lungs are officially on strike.',
           badge: 'EXHAUSTED',
           color: 'rose',
           icon: '🏃',
-        };
-      case 'TOO_PATIENT':
-        return {
-          title: 'TOO PATIENT!',
-          subtitle: 'You watched in silence as the tail lights disappeared into the dark.',
-          badge: 'STRANDED',
-          color: 'indigo',
-          icon: '🌧️',
         };
       case 'TIME_EXPIRED':
       case 'MISSED_BUS':
@@ -82,7 +114,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   };
 
   const outcome = getOutcomeDetails();
-  const isSuccess = reason === 'SUCCESS_237' || reason === 'PATIENCE_BOARDED';
+  const isSuccess = reason === 'SUCCESS_237' || reason === 'PATIENCE_BOARDED' || reason === 'DELAYED_SUCCESS';
 
   // Recently unlocked achievements
   const recentUnlocked = achievements.filter((a) => a.unlocked);

@@ -449,6 +449,70 @@ class SoundManager {
     twang.stop(now + 0.32);
   }
 
+  public playTripStone() {
+    if (!this.ctx || !this.masterGain) return;
+    const now = this.ctx.currentTime;
+
+    // 1. Wet shoe sudden friction scrape
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.18);
+    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = noiseBuffer;
+    const noiseFilter = this.ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(2200, now);
+    noiseFilter.frequency.exponentialRampToValueAtTime(600, now + 0.16);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(this.settings.sfxVolume * 0.6, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(this.masterGain);
+    noise.start(now);
+
+    // 2. Heavy body impact thud on wet concrete
+    const thud = this.ctx.createOscillator();
+    const thudGain = this.ctx.createGain();
+    thud.type = 'triangle';
+    thud.frequency.setValueAtTime(150, now + 0.08);
+    thud.frequency.exponentialRampToValueAtTime(25, now + 0.35);
+
+    thudGain.gain.setValueAtTime(0, now);
+    thudGain.gain.setValueAtTime(this.settings.sfxVolume * 0.8, now + 0.08);
+    thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+    thud.connect(thudGain);
+    thudGain.connect(this.masterGain);
+    thud.start(now + 0.08);
+    thud.stop(now + 0.4);
+
+    // 3. Comic hurt vocal pitch / low groan ("OOF!")
+    const groan = this.ctx.createOscillator();
+    const groanGain = this.ctx.createGain();
+    groan.type = 'sawtooth';
+    groan.frequency.setValueAtTime(180, now + 0.12);
+    groan.frequency.exponentialRampToValueAtTime(75, now + 0.45);
+
+    const groanFilter = this.ctx.createBiquadFilter();
+    groanFilter.type = 'lowpass';
+    groanFilter.frequency.setValueAtTime(450, now + 0.12);
+
+    groanGain.gain.setValueAtTime(0, now);
+    groanGain.gain.setValueAtTime(this.settings.sfxVolume * 0.55, now + 0.12);
+    groanGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+    groan.connect(groanFilter);
+    groanFilter.connect(groanGain);
+    groanGain.connect(this.masterGain);
+    groan.start(now + 0.12);
+    groan.stop(now + 0.52);
+  }
+
   public playSuccessChime() {
     if (!this.ctx || !this.masterGain) return;
     const now = this.ctx.currentTime;

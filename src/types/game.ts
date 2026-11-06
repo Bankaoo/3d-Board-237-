@@ -6,8 +6,12 @@ export type GameOverReason =
   | 'ALMOST_MISSED'
   | 'SUPER_FATIGUE'
   | 'PATIENCE_BOARDED'
-  | 'TOO_PATIENT'
+  | 'NOT_TODAY'
   | 'IMPOSTER'
+  | 'GHOST_BUS'
+  | 'CANCELLED_SERVICE'
+  | 'DELAYED_SUCCESS'
+  | 'TRIPPED_STONE'
   | 'TIME_EXPIRED';
 
 export type MovementState =
@@ -34,7 +38,7 @@ export interface BusEntity {
   isTargetBus: boolean;
   z: number; // world Z in meters
   speed: number; // m/s
-  targetZ: number; // where it intends to stop (13.0 or curb)
+  targetZ: number; // where it intends to stop (20.0 or curb)
   state: 'APPROACHING' | 'DECELERATING' | 'STOPPED_DOORS_OPEN' | 'DEPARTING' | 'PASSED';
   doorsOpen: boolean;
   doorsProgress: number; // 0 to 1
@@ -44,7 +48,7 @@ export interface BusEntity {
 }
 
 export interface PlayerState {
-  z: number; // meters from starting point (0 to 13m)
+  z: number; // meters from starting point (0 to 20m)
   movementState: MovementState;
   speed: number; // current m/s
   sprintTimer: number; // up to 2.0s
@@ -55,10 +59,11 @@ export interface PlayerState {
   facing: 'FORWARD' | 'REAR';
   yaw: number; // 0 (forward) to Math.PI (rear)
   targetYaw: number;
-  turningTimer: number; // 1.0s countdown during turn
+  turningTimer: number; // 0.5s countdown during turn
   headBobY: number;
   headBobX: number;
   bobTime: number;
+  tripped: boolean;
 }
 
 export interface GameSettings {

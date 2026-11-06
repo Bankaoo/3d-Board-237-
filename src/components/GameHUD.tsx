@@ -1,6 +1,6 @@
 import React from 'react';
-import { Achievement, BusEntity, MovementState, PlayerState } from '../types/game';
-import { Clock, Footprints, Wind, Eye, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Achievement, BusEntity, PlayerState } from '../types/game';
+import { Wind, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 interface GameHUDProps {
   timeRemaining: number;
@@ -33,59 +33,11 @@ export const GameHUD: React.FC<GameHUDProps> = ({
     }
   }
 
-  // Calculate distance to destination (20m)
-  const distRemaining = Math.max(0, 20.0 - player.z);
-
-  // Time percentage
-  const timePct = Math.max(0, Math.min(100, (timeRemaining / 25.0) * 100));
 
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 sm:p-5 select-none font-terminal">
-      {/* Top Status Bar */}
-      <div className="flex items-start justify-between w-full gap-2">
-        {/* Time Remaining Counter */}
-        <div className="bg-slate-950/80 backdrop-blur-md border border-slate-700/60 rounded px-3 py-1.5 shadow-lg flex items-center gap-3">
-          <Clock className={`w-4 h-4 ${timeRemaining < 3 ? 'text-rose-400 animate-pulse' : 'text-amber-400'}`} />
-          <div>
-            <div className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">Time Left</div>
-            <div className={`text-base sm:text-lg font-bold font-mono tracking-wider ${timeRemaining < 3 ? 'text-rose-400 font-pixel text-sm' : 'text-amber-300'}`}>
-              {timeRemaining.toFixed(1)}s
-            </div>
-          </div>
-          {/* Circular or bar progress */}
-          <div className="w-16 h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
-            <div
-              className={`h-full transition-all duration-100 ${timeRemaining < 3 ? 'bg-rose-500' : 'bg-amber-400'}`}
-              style={{ width: `${timePct}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Distance to Shelter & Facing */}
-        <div className="bg-slate-950/80 backdrop-blur-md border border-slate-700/60 rounded px-3 py-1.5 shadow-lg flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Footprints className="w-4 h-4 text-emerald-400" />
-            <div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">To Shelter</div>
-              <div className="text-base font-bold text-emerald-300 font-mono">
-                {distRemaining.toFixed(1)}m
-              </div>
-            </div>
-          </div>
-
-          <div className="h-6 w-px bg-slate-800" />
-
-          <div className="flex items-center gap-2">
-            <Eye className={`w-4 h-4 ${player.facing === 'REAR' ? 'text-amber-400' : 'text-cyan-400'}`} />
-            <div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">Facing</div>
-              <div className="text-xs font-semibold text-slate-200">
-                {player.turningTimer > 0 ? 'TURNING...' : player.facing === 'FORWARD' ? 'FORWARD (STOP)' : 'BEHIND (ROAD)'}
-              </div>
-            </div>
-          </div>
-        </div>
-
+      {/* Top Bar with Action Buttons */}
+      <div className="flex items-start justify-end w-full gap-2">
         {/* Top-Right Mini Buttons */}
         <div className="pointer-events-auto flex items-center gap-2">
           <button

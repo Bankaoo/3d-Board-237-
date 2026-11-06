@@ -12,46 +12,81 @@ export const INITIAL_ACHIEVEMENTS: Achievement[] = [
   {
     id: 'made_it',
     title: 'Made It',
-    description: 'Board bus 237.',
+    description: 'Stepped onto Bus 237 on time. Warm heater, condensation on the windows, headed home.',
     unlocked: false,
     icon: '🚌',
   },
   {
-    id: 'imposter',
-    title: 'Imposter',
-    description: 'Board the decoy bus.',
+    id: 'wrong_destination',
+    title: 'Wrong Destination',
+    description: 'Boarded Bus 842. Guess you work at the industrial shipping docks now.',
     unlocked: false,
     icon: '🛑',
   },
   {
-    id: 'marathon_runner',
-    title: 'Marathon Runner',
-    description: 'Sprint 3 times until completely out of breath.',
-    unlocked: false,
-    icon: '🏃',
-  },
-  {
-    id: 'patience_pays',
-    title: 'Patience Pays',
-    description: 'Board without taking a single step.',
-    unlocked: false,
-    icon: '🧘',
-  },
-  {
-    id: 'too_patient',
-    title: 'Too Patient',
-    description: 'Stand still and let the bus pass.',
+    id: 'not_today',
+    title: 'Not Today',
+    description: 'Bus 237 arrived and waited for you, but you chose to stand there in the rain. Iconic.',
     unlocked: false,
     icon: '🌧️',
   },
   {
+    id: 'patience_pays',
+    title: 'Patience Pays',
+    description: 'The driver pulled over right next to you because you didn\'t even move an inch.',
+    unlocked: false,
+    icon: '🧘',
+  },
+  {
+    id: 'marathon_runner',
+    title: 'Marathon Runner',
+    description: 'Three sprints in freezing rain. Your lungs are officially on strike.',
+    unlocked: false,
+    icon: '🏃',
+  },
+  {
     id: 'almost',
-    title: 'Almost',
-    description: 'Miss the bus by a small margin.',
+    title: 'Heartbreak',
+    description: 'The doors slammed shut right as you reached out. Cinematic tragedy.',
     unlocked: false,
     icon: '💨',
   },
+  {
+    id: 'delayed_transit',
+    title: 'Delayed Transit',
+    description: 'Endured an agonizingly late bus in the freezing rain, but made it onboard.',
+    unlocked: false,
+    icon: '⏳',
+  },
+  {
+    id: 'ghost_bus',
+    title: 'Ghost Bus',
+    description: 'You swore you heard the engine, but nothing ever emerged from the fog.',
+    unlocked: false,
+    icon: '👻',
+  },
+  {
+    id: 'cancelled_service',
+    title: 'Cancelled Service',
+    description: 'No engine, no headlights, just cold rain. The route was cancelled hours ago.',
+    unlocked: false,
+    icon: '🚏',
+  },
+  {
+    id: 'hospitalized',
+    title: 'Hospitalized',
+    description: 'Caught your toe on a wet cobblestone. At least the ambulance has central heating.',
+    unlocked: false,
+    icon: '🏥',
+  },
 ];
+
+export type RunVariant =
+  | 'STANDARD'
+  | 'DECOY_ONLY'
+  | 'DELAYED_BUS'
+  | 'GHOST_BUS'
+  | 'NO_BUS';
 
 export class GameSimulation {
   public status: GameStateStatus = 'TITLE';
@@ -77,6 +112,7 @@ export class GameSimulation {
     headBobY: 0,
     headBobX: 0,
     bobTime: 0,
+    tripped: false,
   };
 
   public buses: BusEntity[] = [];
@@ -87,8 +123,10 @@ export class GameSimulation {
   public feedbackTimer: number = 0;
 
   // Run variation flags
-  public isDecoyRun: boolean = false;
+  public runVariant: RunVariant = 'STANDARD';
   public isPatienceCurbRun: boolean = false;
+  private ghostBusZ: number = -60;
+  private tripChanceChecked: boolean = false;
 
   public runStats: GameRunStats = {
     elapsedTime: 0,
@@ -121,7 +159,7 @@ export class GameSimulation {
 
   public loadAchievements() {
     try {
-      const saved = localStorage.getItem('board237_achievements_v3');
+      const saved = localStorage.getItem('board237_achievements_v4');
       if (saved) {
         const parsed = JSON.parse(saved) as Record<string, { unlocked: boolean; unlockedAt: number }>;
         this.achievements = INITIAL_ACHIEVEMENTS.map((a) => {
@@ -144,7 +182,7 @@ export class GameSimulation {
       this.achievements.forEach((a) => {
         record[a.id] = { unlocked: a.unlocked, unlockedAt: a.unlockedAt };
       });
-      localStorage.setItem('board237_achievements_v3', JSON.stringify(record));
+      localStorage.setItem('board237_achievements_v4', JSON.stringify(record));
     } catch (e) {
       console.warn('Could not save achievements:', e);
     }
@@ -154,6 +192,7 @@ export class GameSimulation {
     this.achievements = INITIAL_ACHIEVEMENTS.map((a) => ({ ...a, unlocked: false, unlockedAt: undefined }));
     this.newlyUnlockedAchievement = null;
     try {
+      localStorage.removeItem('board237_achievements_v4');
       localStorage.removeItem('board237_achievements_v3');
       localStorage.removeItem('board237_achievements_v2');
       localStorage.removeItem('board237_achievements');
@@ -181,6 +220,8 @@ export class GameSimulation {
     this.newlyUnlockedAchievement = null;
     this.feedbackMessage = null;
     this.feedbackTimer = 0;
+    this.tripChanceChecked = false;
+    this.ghostBusZ = -70;
 
     this.player = {
       z: 0,
@@ -198,6 +239,7 @@ export class GameSimulation {
       headBobY: 0,
       headBobX: 0,
       bobTime: 0,
+      tripped: false,
     };
 
     this.runStats = {
@@ -210,10 +252,25 @@ export class GameSimulation {
       boardingAttempted: false,
     };
 
-    // Roll rare optionals:
-    // Decoy bus is rare: ~22% chance
-    this.isDecoyRun = Math.random() < 0.22;
-    // Patience curbside pickup is rare: ~30% chance when staying still
+    // Determine Run Scenario:
+    const rand = Math.random();
+    if (rand < 0.38) {
+      this.runVariant = 'STANDARD';
+    } else if (rand < 0.56) {
+      // If decoy bus comes, real bus DOES NOT COME
+      this.runVariant = 'DECOY_ONLY';
+    } else if (rand < 0.74) {
+      // Delayed bus scenario (need to wait long time)
+      this.runVariant = 'DELAYED_BUS';
+    } else if (rand < 0.88) {
+      // Ghost bus: hearing engine hum continuously, but no bus ever arrives
+      this.runVariant = 'GHOST_BUS';
+    } else {
+      // No bus at all: complete silence, no engine humming
+      this.runVariant = 'NO_BUS';
+    }
+
+    // Patience curbside pickup is a rare chance (~30%) when player stands still
     this.isPatienceCurbRun = Math.random() < 0.30;
 
     this.spawnBuses();
@@ -222,32 +279,32 @@ export class GameSimulation {
   private spawnBuses() {
     this.buses = [];
 
-    if (this.isDecoyRun) {
-      // Rare Decoy Bus 842 arrives ahead of 237
+    if (this.runVariant === 'DECOY_ONLY') {
+      // ONLY Decoy bus 842 comes! The real 237 NEVER arrives.
       this.buses.push({
         id: 'bus_decoy_842',
         routeNumber: '842',
         destination: 'HARBOR DOCKS',
         isTargetBus: false,
         z: -95,
-        speed: 17.0,
+        speed: 16.5,
         targetZ: this.TARGET_DISTANCE,
         state: 'APPROACHING',
         doorsOpen: false,
         doorsProgress: 0,
-        doorTimer: 4.8,
+        doorTimer: 6.0,
         headlights: 1.0,
         color: '#065f46',
       });
-
-      // Target Bus 237 follows behind
+    } else if (this.runVariant === 'DELAYED_BUS') {
+      // Delayed bus: starts extremely far away (-235m) so the wait is long and tense
       this.buses.push({
         id: 'bus_target_237',
         routeNumber: '237',
         destination: 'CENTRAL TERMINAL',
         isTargetBus: true,
-        z: -175,
-        speed: 18.0,
+        z: -235,
+        speed: 16.5,
         targetZ: this.TARGET_DISTANCE,
         state: 'APPROACHING',
         doorsOpen: false,
@@ -256,15 +313,15 @@ export class GameSimulation {
         headlights: 1.0,
         color: '#065f46',
       });
-    } else {
-      // Standard run: authentic Bus 237 starts far down the street (-145m)
+    } else if (this.runVariant === 'STANDARD') {
+      // Standard run: authentic Bus 237 arrives from -140m
       this.buses.push({
         id: 'bus_target_237',
         routeNumber: '237',
         destination: 'CENTRAL TERMINAL',
         isTargetBus: true,
-        z: -145,
-        speed: 18.0,
+        z: -140,
+        speed: 17.5,
         targetZ: this.TARGET_DISTANCE,
         state: 'APPROACHING',
         doorsOpen: false,
@@ -273,6 +330,13 @@ export class GameSimulation {
         headlights: 1.0,
         color: '#065f46',
       });
+    } else if (this.runVariant === 'GHOST_BUS') {
+      // No bus entity created! Engine sounds will be simulated in updateBuses()
+      this.buses = [];
+    } else if (this.runVariant === 'NO_BUS') {
+      // No bus and silence! Immediately stop engine
+      this.buses = [];
+      soundManager.stopEngine();
     }
   }
 
@@ -327,14 +391,14 @@ export class GameSimulation {
   }
 
   private triggerTurn() {
-    if (this.player.turningTimer > 0) return; // already turning
+    if (this.player.turningTimer > 0 || this.player.tripped) return;
 
     this.runStats.turnsTaken++;
     soundManager.playTurnWhoosh();
 
     if (this.player.facing === 'FORWARD') {
       this.player.targetYaw = Math.PI;
-      this.player.turningTimer = this.TURN_DURATION; // Fast 0.5s turn
+      this.player.turningTimer = this.TURN_DURATION;
       this.player.movementState = 'TURNING';
     } else {
       this.player.targetYaw = 0;
@@ -344,7 +408,7 @@ export class GameSimulation {
   }
 
   private triggerSprint() {
-    if (this.player.turningTimer > 0) return;
+    if (this.player.turningTimer > 0 || this.player.tripped) return;
 
     // Increment sprint count immediately
     this.player.sprintCount++;
@@ -369,8 +433,19 @@ export class GameSimulation {
     soundManager.playClick(0.3, 750);
   }
 
+  private triggerTripOnStone() {
+    this.player.tripped = true;
+    this.player.speed = 0;
+    this.player.headBobY = 35; // camera slams down to pavement level
+    soundManager.playTripStone();
+    this.unlockAchievement('hospitalized');
+    this.gameOverReason = 'TRIPPED_STONE';
+    this.status = 'GAMEOVER';
+    this.setFeedback('OUCH! Tripped on a loose curb stone! Ambulance called.', 4.5);
+  }
+
   public attemptBoarding() {
-    if (this.status !== 'PLAYING') return;
+    if (this.status !== 'PLAYING' || this.player.tripped) return;
     this.runStats.boardingAttempted = true;
 
     // Find any bus currently with doors open or opening within boarding distance
@@ -404,6 +479,10 @@ export class GameSimulation {
       if (this.player.totalDistanceMoved < 0.2) {
         this.unlockAchievement('patience_pays');
         this.gameOverReason = 'PATIENCE_BOARDED';
+      } else if (this.runVariant === 'DELAYED_BUS') {
+        this.unlockAchievement('delayed_transit');
+        this.unlockAchievement('made_it');
+        this.gameOverReason = 'DELAYED_SUCCESS';
       } else {
         this.unlockAchievement('made_it');
         this.gameOverReason = 'SUCCESS_237';
@@ -413,10 +492,10 @@ export class GameSimulation {
     } else {
       // Boarded decoy bus (842)
       soundManager.playBuzzer();
-      this.unlockAchievement('imposter');
+      this.unlockAchievement('wrong_destination');
       this.gameOverReason = 'IMPOSTER';
       this.status = 'GAMEOVER';
-      this.setFeedback(`Boarded Bus ${nearestBus.routeNumber}! Wrong bus!`, 4.0);
+      this.setFeedback(`Boarded Bus ${nearestBus.routeNumber}! Wrong destination!`, 4.0);
     }
   }
 
@@ -437,6 +516,11 @@ export class GameSimulation {
   }
 
   private updatePlayer(dt: number) {
+    if (this.player.tripped) {
+      this.player.speed = 0;
+      return;
+    }
+
     // 1. Turning transition (0.5s duration)
     if (this.player.turningTimer > 0) {
       this.player.turningTimer = Math.max(0, this.player.turningTimer - dt);
@@ -461,7 +545,6 @@ export class GameSimulation {
     if (this.player.sprintTimer > 0) {
       this.player.sprintTimer = Math.max(0, this.player.sprintTimer - dt);
       if (this.player.sprintTimer <= 0) {
-        // Sprint ended -> enter ordinary fatigue (2.5s)
         this.player.fatigueTimer = 2.5;
         this.player.movementState = 'FATIGUE';
         soundManager.playFatigueGasp(false);
@@ -505,6 +588,21 @@ export class GameSimulation {
         this.runStats.distanceCovered = this.player.z;
       }
 
+      // Check chance to trip over a stone (especially while sprinting through the puddles around 7-14m)
+      if (
+        !this.tripChanceChecked &&
+        this.player.movementState === 'SPRINTING' &&
+        this.player.z > 6.0 &&
+        this.player.z < 16.0
+      ) {
+        this.tripChanceChecked = true;
+        // 14% chance to trip while sprinting
+        if (Math.random() < 0.14) {
+          this.triggerTripOnStone();
+          return;
+        }
+      }
+
       this.player.bobTime += dt * (this.player.speed >= 2.0 ? 16 : 8);
       const bobAmp = this.player.speed >= 2.0 ? 4.5 : 2.5;
       this.player.headBobY = Math.sin(this.player.bobTime) * bobAmp;
@@ -520,6 +618,21 @@ export class GameSimulation {
   }
 
   private updateBuses(dt: number) {
+    // 1. Ghost Bus Simulation (eerie continuous engine hum in distance, but no actual bus)
+    if (this.runVariant === 'GHOST_BUS') {
+      // Hover engine sound around 30-45m behind player
+      this.ghostBusZ += Math.sin(this.runStats.elapsedTime * 2) * dt * 2.0;
+      soundManager.updateBusEngine(this.ghostBusZ, this.player.z, 8.0, true);
+      return;
+    }
+
+    // 2. No Bus Simulation (Cancelled Service - absolute quiet)
+    if (this.runVariant === 'NO_BUS') {
+      soundManager.stopEngine();
+      return;
+    }
+
+    // 3. Physical Buses Simulation
     const isPlayerStill = this.player.totalDistanceMoved < 0.2;
 
     for (const bus of this.buses) {
@@ -529,24 +642,21 @@ export class GameSimulation {
         this.runStats.busNumberSeen = bus.routeNumber;
       }
 
-      // If player remains completely still AND this run rolled the rare patience curbside pickup:
       if (bus.isTargetBus) {
         if (isPlayerStill && this.isPatienceCurbRun) {
-          bus.targetZ = 1.5; // Rare curbside stop
+          bus.targetZ = 1.5;
         } else {
-          bus.targetZ = this.TARGET_DISTANCE; // Regular shelter stop
+          bus.targetZ = this.TARGET_DISTANCE;
         }
       }
 
-      // Audio engine update for primary approaching bus (supports far distance rumble)
-      if (bus.isTargetBus || (bus.state !== 'PASSED' && this.buses.length > 0)) {
-        soundManager.updateBusEngine(
-          bus.z,
-          this.player.z,
-          bus.speed,
-          bus.z < this.player.z
-        );
-      }
+      // Audio engine update
+      soundManager.updateBusEngine(
+        bus.z,
+        this.player.z,
+        bus.speed,
+        bus.z < this.player.z
+      );
 
       // Bus state machine
       if (bus.state === 'APPROACHING') {
@@ -595,15 +705,15 @@ export class GameSimulation {
   private checkTimeOutcomes() {
     if (this.status !== 'PLAYING') return;
 
+    // Check if a target bus arrived, opened doors, but player chose not to board ("Not Today")
     const targetBus = this.buses.find((b) => b.isTargetBus);
-
-    // If target bus drove past and departed
     if (targetBus && targetBus.state === 'PASSED') {
-      if (this.player.totalDistanceMoved < 0.2) {
-        this.unlockAchievement('too_patient');
-        this.gameOverReason = 'TOO_PATIENT';
+      if (!this.runStats.boardingAttempted) {
+        // Player let the bus arrive, wait, and leave without boarding
+        this.unlockAchievement('not_today');
+        this.gameOverReason = 'NOT_TODAY';
         this.status = 'GAMEOVER';
-        this.setFeedback('You stood still in the rain as 237 passed into the dark.', 4.0);
+        this.setFeedback('You watched Bus 237 drive away into the dark. Not today.', 4.0);
         return;
       } else {
         const distToDoor = Math.abs(this.player.z - this.TARGET_DISTANCE);
@@ -619,8 +729,33 @@ export class GameSimulation {
       }
     }
 
-    // Time expiry
+    // If decoy bus was the only bus and passed away
+    const decoyBus = this.buses.find((b) => !b.isTargetBus);
+    if (this.runVariant === 'DECOY_ONLY' && decoyBus && decoyBus.state === 'PASSED') {
+      this.gameOverReason = 'MISSED_BUS';
+      this.status = 'GAMEOVER';
+      this.setFeedback('Bus 842 departed. No other bus is coming tonight.', 4.0);
+      return;
+    }
+
+    // Time expiry outcomes
     if (this.timeRemaining <= 0) {
+      if (this.runVariant === 'GHOST_BUS') {
+        this.unlockAchievement('ghost_bus');
+        this.gameOverReason = 'GHOST_BUS';
+        this.status = 'GAMEOVER';
+        this.setFeedback('The engine sound faded away. A phantom bus in the night.', 4.5);
+        return;
+      }
+
+      if (this.runVariant === 'NO_BUS') {
+        this.unlockAchievement('cancelled_service');
+        this.gameOverReason = 'CANCELLED_SERVICE';
+        this.status = 'GAMEOVER';
+        this.setFeedback('Total silence. The route was cancelled hours ago.', 4.5);
+        return;
+      }
+
       soundManager.playHorn();
       const distToDoor = Math.abs(this.player.z - this.TARGET_DISTANCE);
       if (distToDoor < 3.8) {
@@ -628,14 +763,11 @@ export class GameSimulation {
         this.gameOverReason = 'ALMOST_MISSED';
       } else if (this.player.isSuperFatigued) {
         this.gameOverReason = 'SUPER_FATIGUE';
-      } else if (this.player.totalDistanceMoved < 0.2) {
-        this.unlockAchievement('too_patient');
-        this.gameOverReason = 'TOO_PATIENT';
       } else {
         this.gameOverReason = 'TIME_EXPIRED';
       }
       this.status = 'GAMEOVER';
-      this.setFeedback('Time expired! Stranded in the rain.', 4.0);
+      this.setFeedback('Time expired! Stranded in the cold rain.', 4.0);
     }
   }
 }
